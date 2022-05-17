@@ -1,0 +1,7 @@
+1、安装tensorflow-gpu，要求版本>1.13.1
+2、安装sklearn，用于数据预处理，pip install-U scikit-learn
+3、安装opencv，pip install opencv-contrib-python
+安装配置好环境，python Simulation-code.py 即可运行
+
+abnormal文件夹中仅包含少量测试数据集，可自行调整
+

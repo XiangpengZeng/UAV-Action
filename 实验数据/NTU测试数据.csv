@@ -1,0 +1,12 @@
+
+Total Dataset Length,Train Batch Divider,Train Batch Size,Eval Batch Size
+40090,140.17482517482517,286,442
+Control,Long 0,Long 1,Long 2,Short 3,Short 4,Short 5
+win_size,260,230,200,140,120,100
+stride,39,32,44,75,55,65
+start_time,0,5,10,8,4,1
+
+Test Accuracy1,0.65100
+Test Accuracy1,0.62970
+Test Accuracy1,0.62989
+Fusion Accuracy,0.72811
