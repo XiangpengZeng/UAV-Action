@@ -41,7 +41,7 @@ device_index = [ 0, 0, 0, 0, 0, 0 ]
 
 gradient_device = ['/gpu:0','/gpu:0','/gpu:0','/gpu:0']
 
-class MP_runner(object):
+class Sim_runner(object):
     def __init__(self, is_training, config):
         self._training = is_training
         self.batch_size = batch_size = config.batch_size
@@ -1978,7 +1978,7 @@ def play_action(DATA_PATH1, DATA_PATH2, DATA_PATH3):
                                                         config.init_scale)      
 
             with tf.variable_scope("model", reuse=tf.AUTO_REUSE, initializer=initializer):
-                mtest = MP_runner(is_training=False, config=eval_config)
+                mtest = Sim_runner(is_training=False, config=eval_config)
 
             print("\nTesting Model Established!!\n")
 

@@ -9,7 +9,7 @@ from turtle import bgcolor
 from PIL import Image, ImageTk
 from tkinter import filedialog
 
-from tkinter.filedialog import askdirectory, askopenfilename
+from tkinter.filedialog import askopenfilename
 import Fifth_frame
 
 # 行为识别选择文件界面
@@ -22,6 +22,7 @@ def get_image(filename, width, height):
 def exit_1():
     root.destroy()
 
+# windows路径变linux
 def selectPath1():
     path_ = askopenfilename()
     path_file1.set(path_)

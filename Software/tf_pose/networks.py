@@ -144,7 +144,7 @@ def get_graph_path(model_name):
     else:
         base_data_dir = os.path.join(base_data_dir, 'tf_pose_data')
 
-    graph_path = os.path.join(base_data_dir, dyn_graph_path[model_name])  #这里定义路径
+    graph_path = os.path.join(base_data_dir, dyn_graph_path[model_name])  #定义路径
     if os.path.isfile(graph_path):
         return graph_path
 

@@ -11,7 +11,7 @@ from turtle import bgcolor
 from PIL import Image, ImageTk
 from tkinter import filedialog
 
-from tkinter.filedialog import askdirectory, askopenfilename
+from tkinter.filedialog import  askopenfilename
 
 from pandas import to_datetime
 import Sixth_frame
@@ -26,6 +26,7 @@ def get_image(filename, width, height):
 def exit_1():
     root.destroy()
 
+# windows路径变linux
 def selectPath():
     path_ = askopenfilename()
     path_file.set(path_)

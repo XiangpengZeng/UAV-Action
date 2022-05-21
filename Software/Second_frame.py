@@ -13,7 +13,6 @@ import Fourth_frame
 
 # 功能选择界面
 
-
 def get_image(filename, width, height):
     img = Image.open(filename).resize((width, height))
     return ImageTk.PhotoImage(img)
