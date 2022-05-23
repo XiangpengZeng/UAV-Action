@@ -1,0 +1,7 @@
+配置安装环境同另外两个文件夹
+另外还需安装配置tensorflow-OpenPose，安装方式见：
+https://github.com/jiajunhua/ildoonet-tf-pose-estimation
+并需要下载对应模型放置对应文件夹下（./models/graph/cmu）
+运行  Python First_frame.py即可
+test_folder文件夹下mp4为测试用例
+

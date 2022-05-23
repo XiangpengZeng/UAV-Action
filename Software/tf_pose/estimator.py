@@ -311,11 +311,12 @@ class TfPoseEstimator:
 
     def __init__(self, graph_path, target_size=(320, 240), tf_config=None, trt_bool=False):
         self.target_size = target_size
+        #即需要同时修改get_graph_path函数指向的文件位置以及此文件
         # load graph
         logger.info('loading graph from %s(default size=%dx%d)' % (graph_path, target_size[0], target_size[1]))
-        with tf.gfile.GFile(graph_path, 'rb') as f:   
+        with tf.gfile.GFile(graph_path, 'rb') as f:    #获取文本操作句柄，类似于python提供的文本操作open()函数，
                        #整个操作赋给f     filename是要打开的文件名，mode是以何种方式去读写，将会返回一个文本操作句柄。
-            graph_def = tf.GraphDef()              
+            graph_def = tf.GraphDef()                 #graph序列化的protobuf叫做graphDef，就是define graph的意思，
                         #一个graph的定义，这个graphDef可以用tf.train.write_graph()/tf.Import_graph_def()来写入和导出
             graph_def.ParseFromString(f.read())        #解析包
 
@@ -347,19 +348,19 @@ class TfPoseEstimator:
         self.tensor_pafMat = self.tensor_output[:, :, :, 19:]         #获取
         self.upsample_size = tf.placeholder(dtype=tf.int32, shape=(2,), name='upsample_size')
         self.tensor_heatMat_up = tf.image.resize_area(self.tensor_output[:, :, :, :19], self.upsample_size,
-                                                      align_corners=False, name='upsample_heatmat')   #tensorflow自定义，upsample为（高，宽）
+                                                      align_corners=False, name='upsample_heatmat')   #tensorflow自定义，upsample应该为（高，宽）
         self.tensor_pafMat_up = tf.image.resize_area(self.tensor_output[:, :, :, 19:], self.upsample_size,
                                                      align_corners=False, name='upsample_pafmat')        #缩放，NWHC
         if trt_bool is True:
             smoother = Smoother({'data': self.tensor_heatMat_up}, 25, 3.0, 19)
         else:
             smoother = Smoother({'data': self.tensor_heatMat_up}, 25, 3.0)
-        gaussian_heatMat = smoother.get_output()       #高斯核函数处理（heatmap不是真正的坐标）以得到真正坐标
+        gaussian_heatMat = smoother.get_output()       #高斯核函数处理（heatmap不是真正的坐标）以得到真正坐标，这里没tf
 
         max_pooled_in_tensor = tf.nn.pool(gaussian_heatMat, window_shape=(3, 3), pooling_type='MAX', padding='SAME')
         self.tensor_peaks = tf.where(tf.equal(gaussian_heatMat, max_pooled_in_tensor), gaussian_heatMat,
                                      tf.zeros_like(gaussian_heatMat))     #tensor_peaks就是出来除了关键点的坐标以外都是0的图
-
+        #https://blog.csdn.net/weixin_38145317/article/details/100543738     #但是这个地方用了tf中的池化来寻得关键点
         self.heatMat = self.pafMat = None
 
         # warm-up
@@ -389,7 +390,7 @@ class TfPoseEstimator:
                 self.tensor_image: [np.ndarray(shape=(target_size[1], target_size[0], 3), dtype=np.float32)],
                 self.upsample_size: [target_size[1] // 4, target_size[0] // 4]
             }
-        )           
+        )             #以上代码是为了测试网络能否跑通，博主认为没什么意义
 
         # logs
         if self.tensor_image.dtype == tf.quint8:
@@ -411,39 +412,73 @@ class TfPoseEstimator:
         npimg_q = npimg_q.astype(np.uint8)
         return npimg_q
 
+    # @staticmethod
+    # def draw_humans(npimg, humans, imgcopy=False):
+    #     if imgcopy:
+    #         npimg = np.copy(npimg)
+    #     image_h, image_w = npimg.shape[:2]
+    #     centers = {}
+    #     for human in humans:
+    #         # draw point
+    #         for i in range(common.CocoPart.Background.value):
+    #             if i not in human.body_parts.keys():
+    #                 continue
+
+    #             body_part = human.body_parts[i]
+    #             center = (int(body_part.x * image_w + 0.5), int(body_part.y * image_h + 0.5))
+    #             centers[i] = center
+    #             cv2.circle(npimg, center, 3, common.CocoColors[i], thickness=3, lineType=8, shift=0)
+
+    #         # draw line
+    #         for pair_order, pair in enumerate(common.CocoPairsRender):
+    #             if pair[0] not in human.body_parts.keys() or pair[1] not in human.body_parts.keys():
+    #                 continue
+
+    #             # npimg = cv2.line(npimg, centers[pair[0]], centers[pair[1]], common.CocoColors[pair_order], 3)
+    #             cv2.line(npimg, centers[pair[0]], centers[pair[1]], common.CocoColors[pair_order], 3)
+
+    #     return npimg
 
     @staticmethod
-    def draw_humans(npimg, humans, imgcopy=False):                    
+    def draw_humans(npimg, humans, imgcopy=False):                          #zeng
         if imgcopy:
             npimg = np.copy(npimg)
         image_h, image_w = npimg.shape[:2]
         centers = {}
-        save_list_single = []                                     #用来存储关键点
+        save_list_single = []                                     #zeng,用来存储关键点
+
         for human in humans:
+            count = 1   # 只画14个点
             # draw point
             #for i in range(common.CocoPart.Background.value):
-            for i in range(common.CocoPart.REye.value):     
+            for i in range(common.CocoPart.REye.value):      #zeng
+                if count > 14:
+                    break
                 if i not in human.body_parts.keys():
                     save_list_single.append(0)
-                    save_list_single.append(0)                   #对单个图片，该点如果不存在则置为0，append两次是因为两个坐标
+                    save_list_single.append(0)                   #对单个图片，该点如果不存在则置为0，append两次是因为两个坐标，zeng
                     continue
 
+                count += 1
                 body_part = human.body_parts[i]
                 center = (int(body_part.x * image_w + 0.5), int(body_part.y * image_h + 0.5))
                 save_list_single.append(int(body_part.x * image_w + 0.5))
-                save_list_single.append(int(body_part.y * image_h + 0.5))       
+                save_list_single.append(int(body_part.y * image_h + 0.5))          #zeng
                 centers[i] = center
-                cv2.circle(npimg, center, 3, common.CocoColors[i], thickness=3, lineType=8, shift=0)
+                cv2.circle(npimg, center, 2, common.CocoColors[i], thickness=2, lineType=8, shift=0)
 
+            count = 1
             # draw line
             for pair_order, pair in enumerate(common.CocoPairsRender):
+                if count > 14:
+                    break
                 if pair[0] not in human.body_parts.keys() or pair[1] not in human.body_parts.keys():
                     continue
-
+                count += 1
                 npimg = cv2.line(npimg, centers[pair[0]], centers[pair[1]], common.CocoColors[pair_order], 3)
+        # print("coordinate  current:",save_list_single)        #zeng
 
-
-        return npimg, save_list_single                             
+        return npimg, save_list_single                                         #zeng
 
     def _get_scaled_img(self, npimg, scale):
         get_base_scale = lambda s, w, h: max(self.target_size[0] / float(h), self.target_size[1] / float(w)) * s
@@ -546,7 +581,7 @@ class TfPoseEstimator:
         else:
             return cropped
 
-    def inference(self, npimg, resize_to_default=True, upsample_size=1.0):   
+    def inference(self, npimg, resize_to_default=True, upsample_size=1.0):   #lib_openpose中使用的唯一一个函数
         if npimg is None:
             raise Exception('The image is not valid. Please check your image exists.')   #检查传入图片
 
@@ -556,18 +591,20 @@ class TfPoseEstimator:
             upsample_size = [int(npimg.shape[0] / 8 * upsample_size), int(npimg.shape[1] / 8 * upsample_size)]
          
         #以上为设置upsample_size 
-        if self.tensor_image.dtype == tf.quint8:          
+        if self.tensor_image.dtype == tf.quint8:            #datatype
+            # quantize input image
             npimg = TfPoseEstimator._quantize_img(npimg)
             pass
 
         logger.debug('inference+ original shape=%dx%d' % (npimg.shape[1], npimg.shape[0]))
         img = npimg
         if resize_to_default:                                       #当图片resize到默认值后，开始执行会话
-            img = self._get_scaled_img(npimg, None)[0][0]         
+            img = self._get_scaled_img(npimg, None)[0][0]           #这个函数无tf
+        # print("-------img_shape--------:",img.shape)
         peaks, heatMat_up, pafMat_up = self.persistent_sess.run(
             [self.tensor_peaks, self.tensor_heatMat_up, self.tensor_pafMat_up], feed_dict={
                 self.tensor_image: [img], self.upsample_size: upsample_size
-            })                                        #tf.Session.run()   同时run多个参数，feed_dict为所传递的参数
+            })           #得到原始的                   #tf.Session.run()   同时run多个参数，feed_dict为所传递的参数
                                                       #feed_dict的作用是给使用placeholder创建出来的tensor赋值
         peaks = peaks[0]                              #tensor_peaks就是出来除了关键点的坐标以外都是0的图
         self.heatMat = heatMat_up[0]                  #up为缩放以后的网络输出大小
@@ -577,9 +614,10 @@ class TfPoseEstimator:
 
         t = time.time()
         humans = PoseEstimator.estimate_paf(peaks, self.heatMat, self.pafMat)    #得到图片中有多少个人，以及这些人的关键点坐标，哪些关键点组成哪个人的哪个肢干等数据
-        logger.debug('estimate time=%.5f' % (time.time() - t))                   #返回的还是图(3张3通道的图)，humans是列表
+        logger.debug('estimate time=%.5f' % (time.time() - t))                   #应该返回的还是图(3张3通道的图)，humans是个列表
         return humans
-
+        #def process_paf(p1, h1, f1):
+               #return _pafprocess.process_paf(p1, h1, f1)   我只是把他搬了过来
 
 if __name__ == '__main__':
     import pickle
